@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+import 'Film.dart';
+import 'NewsListState.dart';
 
 void main() => runApp(MyApp());
 
@@ -10,7 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.teal,
       ),
       home: MyBottomBar(title: 'The to watch'),
     );
@@ -28,30 +32,28 @@ class MyBottomBar extends StatefulWidget {
 class _MyBottomBar extends State<MyBottomBar> {
   static final myController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    fetchPost();
-  }
-
-  @override
-  void dispose() {
-    // Clean up the controller when the widget is disposed.
-    myController.dispose();
-    super.dispose();
-  }
+  static String query;
 
   int _selectedIndex = 0;
   static const TextStyle optionStyle =
   TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
 
-  static List<Widget> _widgetOptions = <Widget> [
-    Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: TextField(
-        controller: myController,
-      ),
-    ),
+  List<Widget> _widgetOptions = <Widget> [
+    Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child:
+            Container(
+              width: 230,
+              constraints: BoxConstraints(minWidth: 230.0, minHeight: 25.0),
+              child: TextField(
+                controller: myController,
+              ),
+            ),
+          ),
+          Expanded(child: NewsList()),
+        ]),
     Text(
       'Index 1: Business',
       style: optionStyle,
@@ -68,33 +70,31 @@ class _MyBottomBar extends State<MyBottomBar> {
     });
   }
 
+  void _onPress() async{
+    await NewsListState().fetchPost(myController.text);
+  }
+
+  FloatingActionButton fab () {
+    return FloatingActionButton(
+      // When the user presses the button, show an alert dialog containing
+      // the text that the user has entered into the text field.
+      onPressed: _onPress,
+      tooltip: 'Show me the value!',
+      child: Icon(Icons.text_fields),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return FutureBuilder(
+    child: Scaffold(
       appBar: AppBar(
         title: const Text('BottomNavigationBar Sample'),
       ),
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      floatingActionButton: FloatingActionButton(
-        // When the user presses the button, show an alert dialog containing
-        // the text that the user has entered into the text field.
-        onPressed: () {
-          return showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                // Retrieve the text the that user has entered by using the
-                // TextEditingController.
-                content: Text(myController.text),
-              );
-            },
-          );
-        },
-        tooltip: 'Show me the value!',
-        child: Icon(Icons.text_fields),
-      ),
+      floatingActionButton: fab(),
       bottomNavigationBar: BottomNavigationBar(
           items: const <BottomNavigationBarItem> [
             BottomNavigationBarItem(
@@ -114,20 +114,7 @@ class _MyBottomBar extends State<MyBottomBar> {
           selectedItemColor: Colors.amber[800],
           onTap: _onItemTapped
       ),
+    ),
     );
-  }
-}
-
-void fetchPost() async {
-  final response =
-  await http.get('https://api.themoviedb.org/3/search/movie?api_key=ecb0c9d3850659d960b3e38aa29696a4&query=star%20wars');
-
-  if (response.statusCode == 200) {
-    // If the call to the server was successful, parse the JSON.
-    debugPrint(response.body);
-//    return Post.fromJson(json.decode(response.body));
-  } else {
-    // If that call was not successful, throw an error.
-    throw Exception('Failed to load post');
   }
 }
